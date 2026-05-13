@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "Report": {
+      "title": "Operation Report",
+      "description": "Daily operation report for the water purification plant",
+      "type": "object",
+      "properties": {
+        "id": { "type": "number" },
+        "savedAt": { "type": "string", "format": "date-time" },
+        "dayName": { "type": "string" },
+        "dateGreg": { "type": "string" },
+        "dateHijri": { "type": "string" },
+        "station": { "type": "string" },
+        "city": { "type": "string" },
+        "nasah_prod": { "type": "string" },
+        "manf_prod": { "type": "string" },
+        "supervisor": { "type": "string" },
+        "authorId": { "type": "string" }
+      },
+      "required": ["id", "dateGreg", "station", "authorId"]
+    },
+    "User": {
+      "title": "Application User",
+      "description": "User profile with role-based access control",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "editor", "viewer"] },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Collection of daily operation reports"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    }
+  }
+}

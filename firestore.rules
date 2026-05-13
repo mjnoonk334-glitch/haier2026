@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Primitives
+    function isSignedIn() { 
+      return request.auth != null && request.auth.token.email_verified == true; 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    
+    // Identity Primitives (RBAC)
+    function isAdmin() { 
+      return isSignedIn() && (
+        request.auth.token.email == 'dosnasser717@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+    
+    function isEditor() { 
+      return isSignedIn() && (
+        isAdmin() || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'editor')
+      );
+    }
+
+    // Validation Blueprints
+    function isValidReport(data) {
+      return data.keys().hasAll(['id', 'dateGreg', 'station', 'authorId']) &&
+             data.id is number &&
+             data.dateGreg is string && data.dateGreg.size() <= 64 &&
+             data.station is string && data.station.size() <= 128 &&
+             data.authorId == request.auth.uid;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+             data.email is string && data.email.size() <= 256 &&
+             data.role in ['admin', 'editor', 'viewer'] &&
+             (data.get('displayName', '') is string) &&
+             (data.get('photoURL', '') is string);
+    }
+
+    // --- Collections ---
+
+    match /reports/{reportId} {
+      // Any authenticated user can view reports
+      allow get, list: if isSignedIn();
+      
+      // Only editor or admin can create
+      allow create: if isEditor() && isValidReport(incoming());
+      
+      // Update: editor (owner) or admin
+      allow update: if (isOwner(existing().authorId) || isAdmin()) && isValidReport(incoming());
+      
+      // Delete: admin or owner
+      allow delete: if isAdmin() || isOwner(existing().authorId);
+    }
+
+    match /users/{userId} {
+      // User can read their own profile
+      allow get: if isOwner(userId);
+      
+      // Admins can list and manage all users
+      allow list: if isAdmin();
+      
+      // Admins can update roles
+      allow update: if isAdmin() && isValidUser(incoming());
+      
+      // Allow user to create their own profile (initial sign-in) 
+      allow create: if isOwner(userId) && isValidUser(incoming()) && (
+        incoming().role == 'viewer' || 
+        (incoming().role == 'admin' && request.auth.token.email == 'dosnasser717@gmail.com')
+      );
+    }
+  }
+}

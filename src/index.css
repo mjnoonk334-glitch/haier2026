@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-inter: "Inter", sans-serif;
+  --font-arabic: "Noto Sans Arabic", sans-serif;
+
+  --color-swa-blue: #1a4f8a;
+  --color-swa-blue-mid: #2e6db4;
+  --color-swa-blue-header: #1e5a9e;
+  --color-swa-blue-row: #cce0f5;
+  --color-swa-blue-dark: #0d3a6e;
+}
+
+@layer base {
+  body {
+    @apply font-arabic bg-slate-50 text-slate-900;
+    direction: rtl;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    padding: 0 !important;
+  }
+}
+
